@@ -9,5 +9,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app.zip .
 RUN unzip app.zip -d /app/ && rm app.zip
 
-EXPOSE 8000
-CMD ["sh", "-c", "xvfb-run --server-args='-screen 0, 1920x1080x24' uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1"]
+EXPOSE 8080
+CMD ["sh", "-c", "xvfb-run --server-args='-screen 0, 1920x1080x24' uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080} --workers 1"]
