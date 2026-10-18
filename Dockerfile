@@ -1,5 +1,6 @@
 FROM mcr.microsoft.com/playwright/python:v1.44.0-jammy
 
+# Install unzip dan xvfb (untuk mode headful)
 RUN apt-get update && apt-get install -y unzip xvfb && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
