@@ -1,26 +1,47 @@
-FROM python:3.10-slim
+FROM python:3.12-slim
 
-# 1. Install dependensi OS dasar, xvfb, dan unzip
-RUN apt-get update && apt-get install -y \
-    wget gnupg unzip xvfb libglib2.0-0 libnss3 libnspr4 libatk1.0-0 \
-    libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 \
-    libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2 \
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONPATH=/solver \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
+    DEBIAN_FRONTEND=noninteractive
+
+WORKDIR /solver
+
+# Chromium system libs + Xvfb (virtual display) + utilities
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        curl ca-certificates \
+        libnss3 libnspr4 \
+        libatk1.0-0 libatk-bridge2.0-0 \
+        libcups2 libdrm2 \
+        libxkbcommon0 libxcomposite1 \
+        libxdamage1 libxfixes3 libxrandr2 \
+        libgbm1 libpango-1.0-0 \
+        libcairo2 libasound2 \
+        libatspi2.0-0 \
+        libx11-xcb1 libxcb-dri3-0 \
+        fonts-liberation fonts-noto-color-emoji \
+        xvfb x11-utils \
+        unzip \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+# Python deps + Patchright Chromium
+COPY requirements.txt /solver/requirements.txt
+RUN pip install --no-cache-dir --upgrade pip \
+ && pip install --no-cache-dir -r /solver/requirements.txt \
+ && patchright install chromium \
+ && chmod -R 777 /ms-playwright
 
-# 2. Copy requirements dan install
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# App files
+COPY app.py turnstile_solver1.py /solver/
+COPY start.sh /solver/start.sh
+RUN chmod +x /solver/start.sh
 
-# 3. Instal Chromium khusus untuk Patchright beserta semua dependensi OS-nya
-# (Perintah ini memastikan Chrome bisa jalan sempurna di dalam Docker)
-RUN patchright install --with-deps chromium
-
-# 4. Ekstrak aplikasi Anda
-COPY app.zip .
-RUN unzip app.zip -d /app/ && rm app.zip
-
-# 5. Gunakan Port 8080 sesuai settingan Railway
 EXPOSE 8080
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port 8080 --workers 1"]
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=45s --retries=5 \
+  CMD curl -fsS "http://localhost:${PORT:-8080}/health" || exit 1
+
+CMD ["/solver/start.sh"]
