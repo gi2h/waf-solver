@@ -1,5 +1,5 @@
 fastapi==0.109.0
 uvicorn==0.27.0
-patchright==1.40.0
+nodriver==0.37
 websockets==13.1
 pydantic==2.6.0
