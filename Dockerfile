@@ -1,25 +1,19 @@
-FROM python:3.10-slim
+# 1. Gunakan base image resmi Playwright (Sudah include Python, Chromium, & dependensi OS)
+FROM mcr.microsoft.com/playwright/python:v1.44.0-jammy
 
-# 1. Install dependensi OS standar untuk Playwright
-RUN apt-get update && apt-get install -y \
-    wget gnupg unzip libglib2.0-0 libnss3 libnspr4 libatk1.0-0 \
-    libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 \
-    libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2 \
-    && rm -rf /var/lib/apt/lists/*
-
+# 2. Set working directory di dalam container
 WORKDIR /app
 
-# 2. Install Python requirements
+# 3. Copy file requirements dan install dependensi Python
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 3. Install Browser Chromium khusus Playwright beserta dependensinya
-RUN playwright install --with-deps chromium
-
-# 4. Ekstrak app.zip
+# 4. Copy file app.zip, ekstrak isinya, lalu hapus file zip-nya
 COPY app.zip .
 RUN unzip app.zip -d /app/ && rm app.zip
 
-# 5. Jalankan server
-EXPOSE 8000
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# 5. Expose port (Railway akan mengabaikan ini dan pakai $PORT, tapi ini untuk dokumentasi)
+EXPOSE 8080
+
+# 6. Jalankan Uvicorn menggunakan variabel $PORT dari Railway
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
